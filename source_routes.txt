@@ -1,0 +1,2334 @@
+==================== FILE: src/router.tsx ====================
+import { QueryClient } from "@tanstack/react-query";
+import { createRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+
+export const getRouter = () => {
+  const queryClient = new QueryClient();
+
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    scrollRestoration: true,
+    defaultPreloadStaleTime: 0,
+  });
+
+  return router;
+};
+
+==================== FILE: src/routes/__root.tsx ====================
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+  useRouter,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
+import { useEffect, type ReactNode } from "react";
+
+import appCss from "../styles.css?url";
+import { reportLovableError } from "../lib/lovable-error-reporting";
+
+function NotFoundComponent() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-7xl font-bold text-foreground">404</h1>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          The page you're looking for doesn't exist or has been moved.
+        </p>
+        <div className="mt-6">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Go home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  console.error(error);
+  const router = useRouter();
+  useEffect(() => {
+    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+  }, [error]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          This page didn't load
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Something went wrong on our end. You can try refreshing or head back home.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <button
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Try again
+          </button>
+          <a
+            href="/"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            Go home
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "Lovable App" },
+      { name: "description", content: "Lovable Generated Project" },
+      { name: "author", content: "Lovable" },
+      { property: "og:title", content: "Lovable App" },
+      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:site", content: "@Lovable" },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});
+
+function RootShell({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <Outlet />
+    </QueryClientProvider>
+  );
+}
+
+==================== FILE: src/routes/index.tsx ====================
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Bell, MapPin, Clock, Sparkles, ChevronRight, User, LifeBuoy } from "lucide-react";
+import { posts } from "@/lib/posts";
+import { getUnreadCount } from "@/lib/dotori-state";
+
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "도토리마켓 — 이동 경로 기반 안전 배송 중개" },
+      { name: "description", content: "출장과 이동이 잦은 운전자들이 차량 경로 위에서 안전하게 물품을 배송하고 부수입을 얻는 신뢰 기반 중개 플랫폼." },
+      { property: "og:title", content: "도토리마켓" },
+      { property: "og:description", content: "이동 경로 위에서 만나는 안전 배송 중개" },
+    ],
+  }),
+  component: Index,
+});
+
+function Index() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="mx-auto max-w-2xl px-4 pb-24 pt-4">
+        <HeroBanner />
+        <FilterBar />
+        <ul className="mt-4 space-y-3">
+          {posts.map((p) => (
+            <li key={p.id}>
+              <Link
+                to="/post/$id"
+                params={{ id: p.id }}
+                className="group block rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(20,30,60,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(20,30,60,0.08)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">
+                        안심 에스크로
+                      </span>
+                      <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-mint-foreground">
+                        당일배송
+                      </span>
+                    </div>
+                    <h3 className="mt-2 text-[15px] font-semibold leading-snug text-foreground">
+                      {p.title}
+                    </h3>
+                  </div>
+                  <ChevronRight className="mt-1 size-5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                </div>
+
+                <div className="mt-3 rounded-xl bg-secondary/50 px-3 py-2.5">
+                  <p className="text-[13px] text-muted-foreground">상품</p>
+                  <p className="text-sm font-medium text-foreground">{p.product}</p>
+                </div>
+
+                <div className="mt-3 flex items-start gap-2 text-[13px] text-foreground">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <div className="leading-relaxed">
+                    <span className="font-medium">{p.fromArea}</span>
+                    <span className="mx-1.5 text-muted-foreground">→</span>
+                    <span className="font-medium">{p.toArea}</span>
+                  </div>
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="size-3.5" />
+                    픽업 {p.pickupWindow}
+                  </span>
+                  <span>마감 {p.deadline}</span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-dashed border-border pt-3">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-[12px] font-medium text-accent-foreground">
+                    <Sparkles className="size-3.5" />
+                    AI 예상: {p.aiEstimate}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] text-muted-foreground">배송비</p>
+                    <p className="text-base font-bold text-primary">
+                      {p.fee.toLocaleString()}원
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </main>
+    </div>
+  );
+}
+
+function Header() {
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    setUnread(getUnreadCount());
+    const i = setInterval(() => setUnread(getUnreadCount()), 1500);
+    return () => clearInterval(i);
+  }, []);
+  return (
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
+        <Link to="/" className="flex items-center gap-2">
+          <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_4px_12px_rgba(20,30,60,0.2)]">
+            <AcornIcon />
+          </span>
+          <div className="leading-tight">
+            <p className="text-[15px] font-bold tracking-tight text-foreground">도토리마켓</p>
+            <p className="text-[11px] text-muted-foreground">이동 경로 위 안전 배송</p>
+          </div>
+        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            to="/profile"
+            className="grid size-10 place-items-center rounded-full text-foreground transition hover:bg-secondary"
+            aria-label="내 정보"
+          >
+            <User className="size-5" />
+          </Link>
+          <Link
+            to="/notifications"
+            className="relative grid size-10 place-items-center rounded-full text-foreground transition hover:bg-secondary"
+            aria-label="알림"
+          >
+            <Bell className="size-5" />
+            {unread > 0 && (
+              <span className="absolute right-1.5 top-1.5 grid min-w-[16px] place-items-center rounded-full bg-acorn px-1 text-[9.5px] font-bold leading-4 text-acorn-foreground ring-2 ring-background">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </Link>
+          <Link
+            to="/support"
+            className="grid size-10 place-items-center rounded-full text-foreground transition hover:bg-secondary"
+            aria-label="고객센터"
+          >
+            <LifeBuoy className="size-5" />
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function HeroBanner() {
+  return (
+    <section className="overflow-hidden rounded-2xl bg-primary px-5 py-5 text-primary-foreground">
+      <p className="text-[12px] font-medium text-primary-foreground/70">오늘의 도토리</p>
+      <h2 className="mt-1 text-[19px] font-bold leading-snug">
+        가는 길에 잠깐, <br />
+        커피값 + 주유비 벌어가세요 ☕
+      </h2>
+      <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1.5 text-[12px]">
+        <span className="size-1.5 rounded-full bg-mint" />
+        실시간 24건의 요청이 매칭 대기 중
+      </div>
+    </section>
+  );
+}
+
+function FilterBar() {
+  const chips = ["전체", "수도권", "영남권", "호남권", "당일배송", "고가품"];
+  return (
+    <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {chips.map((c, i) => (
+        <button
+          key={c}
+          className={
+            "shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition " +
+            (i === 0
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground hover:bg-secondary/70")
+          }
+        >
+          {c}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AcornIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none">
+      <path
+        d="M5 9c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v.5c0 .8-.7 1.5-1.5 1.5h-11C5.7 11 5 10.3 5 9.5V9Z"
+        fill="currentColor"
+        opacity=".4"
+      />
+      <path
+        d="M7 11h10c-.4 4.4-3 8-5 8s-4.6-3.6-5-8Z"
+        fill="currentColor"
+      />
+      <path d="M12 4v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+==================== FILE: src/routes/profile.tsx ====================
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  Lock,
+  Check,
+  Car,
+  Plus,
+  Trash2,
+  ShieldCheck,
+  Pencil,
+  KeyRound,
+  Award,
+  Star,
+  LifeBuoy,
+} from "lucide-react";
+import {
+  getMember,
+  setMember,
+  addVehicle,
+  removeVehicle,
+  type Member,
+  type Vehicle,
+} from "@/lib/dotori-state";
+
+export const Route = createFileRoute("/profile")({
+  component: ProfilePage,
+  head: () => ({ meta: [{ title: "내 정보 — 도토리마켓" }] }),
+});
+
+function ProfilePage() {
+  const navigate = useNavigate();
+  const [member, setLocalMember] = useState<Member | null>(null);
+  const [editUnlocked, setEditUnlocked] = useState(false);
+  const [pwInput, setPwInput] = useState("");
+  const [pwError, setPwError] = useState("");
+
+  // Edit form state
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // Add vehicle modal
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
+
+  const refresh = () => {
+    const m = getMember();
+    setLocalMember(m);
+    if (m) {
+      setName(m.name);
+      setPhone(m.phone);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  if (!member) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background px-4 text-center">
+        <div>
+          <p className="text-lg font-semibold">로그인이 필요해요</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            가입 후 내 정보를 관리할 수 있어요.
+          </p>
+          <button
+            onClick={() => navigate({ to: "/signup" })}
+            className="mt-4 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+          >
+            회원가입 하러가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const tryUnlock = () => {
+    if (pwInput === member.password) {
+      setEditUnlocked(true);
+      setPwError("");
+      setPwInput("");
+    } else {
+      setPwError("비밀번호가 일치하지 않습니다.");
+    }
+  };
+
+  const saveProfile = () => {
+    setMember({ ...member, name, phone });
+    refresh();
+    setEditUnlocked(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border/70 bg-background/85 px-3 py-3 backdrop-blur-md">
+        <Link to="/" className="grid size-10 place-items-center rounded-full hover:bg-secondary">
+          <ArrowLeft className="size-5" />
+        </Link>
+        <p className="text-sm font-semibold">내 정보</p>
+        <div className="size-10" />
+      </div>
+
+      <main className="mx-auto max-w-md px-5 pt-5">
+        {/* Identity card */}
+        <section className="rounded-2xl bg-primary p-5 text-primary-foreground shadow-[0_8px_24px_rgba(20,30,60,0.18)]">
+          <div className="flex items-center gap-3">
+            <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15 text-lg font-bold">
+              {member.name.slice(0, 1) || "도"}
+            </div>
+            <div>
+              <p className="text-[16px] font-bold">{member.name}</p>
+              <p className="text-[12.5px] text-primary-foreground/75">{member.phone}</p>
+            </div>
+          </div>
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/10 px-2.5 py-1 text-[11.5px]">
+            <ShieldCheck className="size-3.5" />
+            실명·휴대폰 인증 완료
+          </div>
+        </section>
+
+        {/* Personal info */}
+        <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-[13.5px] font-semibold">개인정보</p>
+            {!editUnlocked ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                <Lock className="size-3" /> 잠금
+              </span>
+            ) : (
+              <button
+                onClick={() => setEditUnlocked(false)}
+                className="text-[12px] font-medium text-muted-foreground hover:text-foreground"
+              >
+                잠그기
+              </button>
+            )}
+          </div>
+
+          {!editUnlocked ? (
+            <div className="mt-3 space-y-2">
+              <RowStatic label="이름" value={member.name} />
+              <RowStatic label="연락처" value={member.phone} />
+              <div className="mt-3 rounded-xl border border-dashed border-border bg-secondary/40 p-3">
+                <p className="inline-flex items-center gap-1 text-[12px] font-semibold text-foreground">
+                  <KeyRound className="size-3.5 text-primary" />
+                  수정하려면 비밀번호를 입력하세요
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="password"
+                    value={pwInput}
+                    onChange={(e) => {
+                      setPwInput(e.target.value);
+                      setPwError("");
+                    }}
+                    placeholder="비밀번호"
+                    className="flex-1 rounded-lg bg-card px-3 py-2 text-[13px] outline-none ring-1 ring-border focus:ring-primary"
+                  />
+                  <button
+                    onClick={tryUnlock}
+                    className="rounded-lg bg-primary px-3.5 text-[12.5px] font-semibold text-primary-foreground"
+                  >
+                    잠금 해제
+                  </button>
+                </div>
+                {pwError && (
+                  <p className="mt-1.5 text-[11.5px] font-medium text-acorn">
+                    {pwError}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3 space-y-3">
+              <RowEdit label="이름" value={name} onChange={setName} />
+              <RowEdit label="연락처" value={phone} onChange={setPhone} />
+              <button
+                onClick={saveProfile}
+                className="mt-1 w-full rounded-xl bg-primary py-2.5 text-[13.5px] font-semibold text-primary-foreground"
+              >
+                <Pencil className="mr-1 inline size-3.5" />
+                변경사항 저장
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Vehicles */}
+        <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[13.5px] font-semibold">내 차량</p>
+              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                인증된 차량으로 더 빠르게 매칭돼요
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAddVehicle(true)}
+              className="inline-flex items-center gap-1 rounded-lg bg-mint px-2.5 py-1.5 text-[12px] font-semibold text-mint-foreground"
+            >
+              <Plus className="size-3.5" />
+              차량 인증하기
+            </button>
+          </div>
+
+          <ul className="mt-3 space-y-2">
+            {member.vehicles.length === 0 && (
+              <li className="rounded-xl border border-dashed border-border bg-secondary/40 p-4 text-center text-[12.5px] text-muted-foreground">
+                아직 등록된 차량이 없어요. <br />
+                <b className="text-foreground">[차량 인증하기]</b>로 등록해보세요.
+              </li>
+            )}
+            {member.vehicles.map((v) => (
+              <li
+                key={v.id}
+                className="flex items-center justify-between gap-3 rounded-xl bg-secondary/50 px-3.5 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="grid size-9 place-items-center rounded-lg bg-card text-primary">
+                    <Car className="size-4.5" />
+                  </span>
+                  <div>
+                    <p className="text-[13.5px] font-bold tracking-tight">{v.plate}</p>
+                    <p className="text-[11.5px] text-muted-foreground">{v.model}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {v.verified && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-mint-foreground">
+                      <Check className="size-3" /> 인증
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      removeVehicle(v.id);
+                      refresh();
+                    }}
+                    className="grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-card hover:text-acorn"
+                    aria-label="삭제"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* 실적 기록 */}
+        <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[13.5px] font-semibold">실적 기록</p>
+              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                완료한 운송과 받은 평가가 누적됩니다
+              </p>
+            </div>
+            <Award className="size-5 text-acorn" />
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-primary/[0.06] px-3.5 py-3">
+              <p className="text-[11px] font-medium text-muted-foreground">누적 운송</p>
+              <p className="mt-0.5 text-2xl font-extrabold text-primary">
+                {member.stats.completedCount}
+                <span className="ml-0.5 text-sm font-semibold">건</span>
+              </p>
+            </div>
+            <div className="rounded-xl bg-acorn/10 px-3.5 py-3">
+              <p className="text-[11px] font-medium text-muted-foreground">평균 평점</p>
+              <p className="mt-0.5 text-2xl font-extrabold text-acorn">
+                {member.stats.ratings.length === 0
+                  ? "-"
+                  : (
+                      member.stats.ratings.reduce((s, r) => s + r.stars, 0) /
+                      member.stats.ratings.length
+                    ).toFixed(1)}
+                <span className="ml-0.5 text-sm font-semibold">★</span>
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-4 mb-2 text-[12px] font-semibold text-muted-foreground">
+            받은 평가
+          </p>
+          {member.stats.ratings.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-secondary/40 p-4 text-center text-[12.5px] text-muted-foreground">
+              아직 평가가 없어요. 첫 운송을 완료해보세요!
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {[...member.stats.ratings].reverse().map((r) => (
+                <li key={r.id} className="rounded-xl bg-secondary/50 px-3.5 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star
+                          key={n}
+                          className={`size-3.5 ${
+                            n <= r.stars ? "fill-acorn text-acorn" : "text-secondary"
+                          }`}
+                        />
+                      ))}
+                    </span>
+                    <span className="ml-auto text-[10.5px] text-muted-foreground">
+                      게시글 #{r.postId} · {new Date(r.createdAt).toLocaleDateString("ko-KR")}
+                    </span>
+                  </div>
+                  {r.comment && (
+                    <p className="mt-1 text-[12.5px] leading-relaxed text-foreground/85">
+                      "{r.comment}"
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Support shortcut */}
+        <Link
+          to="/support"
+          className="mt-4 flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-9 place-items-center rounded-full bg-sky text-sky-foreground">
+              <LifeBuoy className="size-4.5" />
+            </span>
+            <div>
+              <p className="text-[13.5px] font-semibold">고객센터</p>
+              <p className="text-[11.5px] text-muted-foreground">
+                자주 묻는 질문 · 1:1 문의 · 신고
+              </p>
+            </div>
+          </div>
+          <span className="text-muted-foreground">›</span>
+        </Link>
+      </main>
+
+      {showAddVehicle && (
+        <AddVehicleModal
+          onClose={() => setShowAddVehicle(false)}
+          onAdded={(v) => {
+            addVehicle(v);
+            refresh();
+            setShowAddVehicle(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function RowStatic({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl bg-secondary/50 px-3.5 py-2.5">
+      <span className="text-[12px] text-muted-foreground">{label}</span>
+      <span className="text-[13px] font-semibold text-foreground">{value}</span>
+    </div>
+  );
+}
+
+function RowEdit({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-[12px] font-semibold text-muted-foreground">
+        {label}
+      </label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl bg-secondary px-3.5 py-2.5 text-[13.5px] outline-none ring-1 ring-transparent focus:bg-card focus:ring-primary"
+      />
+    </div>
+  );
+}
+
+function AddVehicleModal({
+  onClose,
+  onAdded,
+}: {
+  onClose: () => void;
+  onAdded: (v: { plate: string; model: string; verified: boolean }) => void;
+}) {
+  const [plate, setPlate] = useState("");
+  const [model, setModel] = useState("");
+  const [step, setStep] = useState<"input" | "verifying" | "done">("input");
+
+  const startVerify = () => {
+    if (!plate || !model) return;
+    setStep("verifying");
+    setTimeout(() => setStep("done"), 1200);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2">
+          <span className="grid size-9 place-items-center rounded-full bg-primary/10 text-primary">
+            <Car className="size-4.5" />
+          </span>
+          <div>
+            <h3 className="text-[15.5px] font-bold">차량 인증하기</h3>
+            <p className="text-[11.5px] text-muted-foreground">
+              차량번호 조회로 명의를 확인합니다
+            </p>
+          </div>
+        </div>
+
+        {step === "input" && (
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold">차량번호</label>
+              <input
+                value={plate}
+                onChange={(e) => setPlate(e.target.value)}
+                placeholder="예) 12가 3456"
+                className="w-full rounded-xl bg-secondary px-3.5 py-2.5 text-[14px] tracking-wide outline-none ring-1 ring-transparent focus:bg-card focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold">차종</label>
+              <input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="예) 기아 카니발 9인승 (2023)"
+                className="w-full rounded-xl bg-secondary px-3.5 py-2.5 text-[13.5px] outline-none ring-1 ring-transparent focus:bg-card focus:ring-primary"
+              />
+            </div>
+            <button
+              onClick={startVerify}
+              disabled={!plate || !model}
+              className="w-full rounded-xl bg-primary py-3 text-[14px] font-bold text-primary-foreground disabled:opacity-40"
+            >
+              명의 확인 및 인증
+            </button>
+          </div>
+        )}
+
+        {step === "verifying" && (
+          <div className="mt-6 py-8 text-center">
+            <div className="mx-auto size-10 animate-spin rounded-full border-2 border-secondary border-t-primary" />
+            <p className="mt-3 text-[13px] text-muted-foreground">
+              명의 정보를 확인하고 있어요…
+            </p>
+          </div>
+        )}
+
+        {step === "done" && (
+          <div className="mt-5 text-center">
+            <div className="mx-auto grid size-12 place-items-center rounded-full bg-mint text-mint-foreground">
+              <Check className="size-6" />
+            </div>
+            <p className="mt-3 text-[14px] font-bold">차량 인증 완료!</p>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              {plate} · {model}
+            </p>
+            <button
+              onClick={() => onAdded({ plate, model, verified: true })}
+              className="mt-4 w-full rounded-xl bg-primary py-2.5 text-[13.5px] font-bold text-primary-foreground"
+            >
+              내 차량에 추가
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+==================== FILE: src/routes/signup.tsx ====================
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { ArrowLeft, Check, ShieldCheck, Phone, Lock } from "lucide-react";
+import { setMember, applyForPost } from "@/lib/dotori-state";
+
+type Search = { from?: string };
+
+export const Route = createFileRoute("/signup")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    from: typeof search.from === "string" ? search.from : undefined,
+  }),
+  component: SignupPage,
+  head: () => ({ meta: [{ title: "회원가입 — 도토리마켓" }] }),
+});
+
+function SignupPage() {
+  const { from } = Route.useSearch();
+  const navigate = useNavigate();
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [password, setPassword] = useState("");
+  const [agreed, setAgreed] = useState(false);
+
+  const canSubmit =
+    name && phone && otpVerified && password.length >= 4 && agreed;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setMember({ name, phone, password, vehicles: [], stats: { completedCount: 0, ratings: [] } });
+    if (from) {
+      applyForPost(from);
+      navigate({ to: "/post/$id", params: { id: from } });
+    } else {
+      navigate({ to: "/profile" });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border/70 bg-background/85 px-3 py-3 backdrop-blur-md">
+        <Link to="/" className="grid size-10 place-items-center rounded-full hover:bg-secondary">
+          <ArrowLeft className="size-5" />
+        </Link>
+        <p className="text-sm font-semibold">회원가입</p>
+        <div className="size-10" />
+      </div>
+
+      <main className="mx-auto max-w-md px-5 pt-6">
+        <h1 className="text-[22px] font-bold leading-snug">
+          가는 길에 도토리 줍기,<br />
+          <span className="text-primary">3분 만에 시작</span>해요
+        </h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          실명·연락처 인증 후 모든 요청에 신청할 수 있어요.
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+          <Field label="이름">
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="홍길동"
+              className="input"
+            />
+          </Field>
+
+          <Field label="연락처 (휴대폰 인증)">
+            <div className="flex gap-2">
+              <input
+                required
+                inputMode="tel"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  setOtpSent(false);
+                  setOtpVerified(false);
+                }}
+                placeholder="010-0000-0000"
+                className="input flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => setOtpSent(true)}
+                disabled={!phone || otpVerified}
+                className="shrink-0 rounded-xl bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground disabled:opacity-50"
+              >
+                <Phone className="mr-1 inline size-3.5" />
+                인증요청
+              </button>
+            </div>
+            {otpSent && !otpVerified && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="인증번호 6자리"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="input flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setOtpVerified(otp.length >= 4)}
+                  className="shrink-0 rounded-xl bg-mint px-3.5 text-[13px] font-semibold text-mint-foreground"
+                >
+                  확인
+                </button>
+              </div>
+            )}
+            {otpVerified && (
+              <p className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-mint-foreground">
+                <Check className="size-3.5" /> 인증 완료
+              </p>
+            )}
+          </Field>
+
+          <Field label="비밀번호" hint="개인정보 수정 시 사용됩니다 (4자 이상)">
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                required
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="input pl-10"
+                minLength={4}
+              />
+            </div>
+          </Field>
+
+          <label className="flex items-start gap-3 rounded-xl bg-sky/50 p-3.5">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 size-4 accent-[color:var(--primary)]"
+            />
+            <span className="text-[12.5px] leading-relaxed text-foreground/85">
+              <ShieldCheck className="mr-1 inline size-3.5 text-primary" />
+              <b className="text-primary">이용약관 및 물피보상 범위</b>에 동의합니다.
+              (최대 보상한도 200만원, 면책 조항 확인)
+            </span>
+          </label>
+
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="w-full rounded-xl bg-primary py-3.5 text-[15px] font-bold text-primary-foreground shadow-[0_8px_20px_rgba(20,30,60,0.18)] disabled:opacity-40 disabled:shadow-none"
+          >
+            가입 완료
+          </button>
+          <p className="text-center text-[12px] text-muted-foreground">
+            가입 후 <b className="text-primary">[내 정보 → 차량 인증하기]</b>에서
+            차량을 등록할 수 있어요.
+          </p>
+        </form>
+      </main>
+
+      <style>{`
+        .input {
+          width: 100%;
+          border-radius: 0.75rem;
+          background: var(--secondary);
+          padding: 0.75rem 1rem;
+          font-size: 14px;
+          color: var(--foreground);
+          outline: none;
+          border: 1px solid transparent;
+          transition: all .15s;
+        }
+        .input::placeholder { color: var(--muted-foreground); opacity: .7 }
+        .input:focus {
+          background: var(--card);
+          border-color: var(--primary);
+          box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 12%, transparent);
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-baseline justify-between">
+        <label className="text-[13px] font-semibold text-foreground">{label}</label>
+        {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+==================== FILE: src/routes/notifications.tsx ====================
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Bell, CheckCheck, Package, ThumbsUp, CheckCircle2, LifeBuoy } from "lucide-react";
+import {
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  type Notification,
+} from "@/lib/dotori-state";
+
+export const Route = createFileRoute("/notifications")({
+  component: NotificationsPage,
+  head: () => ({ meta: [{ title: "알림 — 도토리마켓" }] }),
+});
+
+function NotificationsPage() {
+  const navigate = useNavigate();
+  const [items, setItems] = useState<Notification[]>([]);
+
+  const refresh = () => setItems(getNotifications());
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const open = (n: Notification) => {
+    markNotificationRead(n.id);
+    if (n.postId) {
+      navigate({ to: "/post/$id", params: { id: n.postId }, search: { action: n.type === "application" ? "approve" : undefined } as any });
+    } else {
+      refresh();
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-16">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border/70 bg-background/85 px-3 py-3 backdrop-blur-md">
+        <Link to="/" className="grid size-10 place-items-center rounded-full hover:bg-secondary">
+          <ArrowLeft className="size-5" />
+        </Link>
+        <p className="text-sm font-semibold">알림</p>
+        <button
+          onClick={() => {
+            markAllNotificationsRead();
+            refresh();
+          }}
+          className="grid size-10 place-items-center rounded-full text-muted-foreground hover:bg-secondary"
+          aria-label="모두 읽음"
+        >
+          <CheckCheck className="size-5" />
+        </button>
+      </div>
+
+      <main className="mx-auto max-w-md px-4 pt-3">
+        {items.length === 0 && (
+          <div className="mt-24 text-center">
+            <div className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-muted-foreground">
+              <Bell className="size-6" />
+            </div>
+            <p className="mt-3 text-[14px] font-semibold">아직 알림이 없어요</p>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              새 신청, 매칭 승인, 운송 완료 알림이 여기에 표시돼요.
+            </p>
+          </div>
+        )}
+        <ul className="space-y-2">
+          {items.map((n) => (
+            <li key={n.id}>
+              <button
+                onClick={() => open(n)}
+                className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(20,30,60,0.08)] ${
+                  n.read
+                    ? "border-border bg-card"
+                    : "border-primary/30 bg-primary/[0.04]"
+                }`}
+              >
+                <NotifIcon type={n.type} />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13.5px] font-bold leading-tight">{n.title}</p>
+                    {!n.read && <span className="size-1.5 rounded-full bg-acorn" />}
+                  </div>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
+                    {n.body}
+                  </p>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground/80">
+                    {relTime(n.createdAt)}
+                  </p>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </main>
+    </div>
+  );
+}
+
+function NotifIcon({ type }: { type: Notification["type"] }) {
+  const map = {
+    application: { Icon: Package, cls: "bg-acorn/15 text-acorn" },
+    approved: { Icon: ThumbsUp, cls: "bg-primary/10 text-primary" },
+    completed: { Icon: CheckCircle2, cls: "bg-mint text-mint-foreground" },
+    support: { Icon: LifeBuoy, cls: "bg-sky text-sky-foreground" },
+  } as const;
+  const { Icon, cls } = map[type];
+  return (
+    <span className={`grid size-9 shrink-0 place-items-center rounded-full ${cls}`}>
+      <Icon className="size-4.5" />
+    </span>
+  );
+}
+
+function relTime(ts: number) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "방금 전";
+  if (m < 60) return `${m}분 전`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  const d = Math.floor(h / 24);
+  return `${d}일 전`;
+}
+
+==================== FILE: src/routes/post.$id.tsx ====================
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Lock,
+  ShieldCheck,
+  AlertTriangle,
+  CheckCircle2,
+  Phone,
+  KeyRound,
+  MapPin,
+  X,
+  Car,
+  Check,
+  Plus,
+  Pencil,
+  Star,
+  Truck,
+  Award,
+  Send,
+} from "lucide-react";
+import { getPost } from "@/lib/posts";
+import {
+  getApplication,
+  applyForPost,
+  approveApplication,
+  resetApplication,
+  completeApplication,
+  getMember,
+  type AppStatus,
+  type AppState,
+  type Vehicle,
+} from "@/lib/dotori-state";
+
+type Search = { action?: "approve" };
+
+export const Route = createFileRoute("/post/$id")({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    action: s.action === "approve" ? "approve" : undefined,
+  }),
+  component: PostDetail,
+  head: ({ params }) => ({
+    meta: [{ title: `요청 #${params.id} — 도토리마켓` }],
+  }),
+});
+
+function PostDetail() {
+  const { id } = Route.useParams();
+  const { action } = Route.useSearch();
+  const post = getPost(id);
+  const navigate = useNavigate();
+  const router = useRouter();
+
+  const [app, setApp] = useState<AppState | undefined>(undefined);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
+  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const approveRef = useRef<HTMLDivElement | null>(null);
+
+  const status: AppStatus | "none" = app?.status ?? "none";
+
+  const refresh = () => setApp(getApplication(id));
+  useEffect(() => {
+    refresh();
+  }, [id]);
+
+  // Deep-link from notification: scroll to approve panel
+  useEffect(() => {
+    if (action === "approve" && approveRef.current) {
+      approveRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [action, app]);
+
+  if (!post) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background px-4 text-center">
+        <div>
+          <p className="text-lg font-semibold">요청 글을 찾을 수 없어요</p>
+          <Link to="/" className="mt-3 inline-block text-sm text-primary underline">
+            피드로 돌아가기
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const handleApply = () => {
+    const member = getMember();
+    if (!member) {
+      setShowAuthModal(true);
+      return;
+    }
+    setShowVehicleModal(true);
+  };
+
+  const confirmApply = (plate: string) => {
+    applyForPost(id, plate);
+    refresh();
+    setShowVehicleModal(false);
+  };
+
+  const handleApprove = () => {
+    approveApplication(id);
+    refresh();
+  };
+
+  const handleReset = () => {
+    resetApplication(id);
+    refresh();
+  };
+
+  const handleCompleteRating = (stars: number, comment: string) => {
+    completeApplication(id, { stars, comment, fromName: "요청자" });
+    refresh();
+    setShowRatingModal(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-32">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border/70 bg-background/85 px-3 py-3 backdrop-blur-md">
+        <button
+          onClick={() => router.history.back()}
+          className="grid size-10 place-items-center rounded-full hover:bg-secondary"
+          aria-label="뒤로"
+        >
+          <ArrowLeft className="size-5" />
+        </button>
+        <p className="text-sm font-semibold">배송 요청 상세</p>
+        <div className="size-10" />
+      </div>
+
+      <main className="mx-auto max-w-2xl px-4 pt-4">
+        <div className="flex flex-wrap gap-1.5">
+          <Chip tone="secondary">안심 에스크로</Chip>
+          <Chip tone="mint">당일배송</Chip>
+          <Chip tone="acorn">긴급</Chip>
+        </div>
+        <h1 className="mt-3 text-[20px] font-bold leading-snug text-foreground">
+          {post.title}
+        </h1>
+
+        {/* Fee + product */}
+        <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[12px] text-muted-foreground">제시 배송비</p>
+              <p className="mt-0.5 text-2xl font-extrabold text-primary">
+                {post.fee.toLocaleString()}
+                <span className="ml-0.5 text-sm font-semibold">원</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[12px] text-muted-foreground">AI 예상 소요</p>
+              <p className="mt-0.5 text-sm font-semibold text-foreground">{post.aiEstimate}</p>
+            </div>
+          </div>
+          <div className="mt-3 rounded-xl bg-secondary/50 px-3 py-2.5">
+            <p className="text-[12px] text-muted-foreground">상품</p>
+            <p className="text-sm font-semibold">{post.product}</p>
+          </div>
+        </section>
+
+        {/* Driver applicant card - shown after applied */}
+        {app?.driver && (status === "applied" || status === "approved" || status === "completed") && (
+          <section
+            ref={approveRef}
+            className="mt-3 overflow-hidden rounded-2xl border border-primary/25 bg-card"
+          >
+            <div className="border-b border-border bg-primary/[0.04] px-4 py-2.5">
+              <p className="text-[11.5px] font-bold uppercase tracking-wide text-primary">
+                신청한 드라이버
+              </p>
+            </div>
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground text-base font-bold">
+                  {app.driver.name.slice(0, 1) || "도"}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[14.5px] font-bold">{app.driver.name}</p>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-mint px-1.5 py-0.5 text-[10px] font-semibold text-mint-foreground">
+                      <ShieldCheck className="size-2.5" /> 본인인증
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                    실명·휴대폰·차량 명의 확인 완료
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <StatBlock
+                  icon={<Car className="size-3.5" />}
+                  label="배송 차량"
+                  value={app.driver.vehiclePlate}
+                  sub={app.driver.vehicleModel}
+                />
+                <StatBlock
+                  icon={<Truck className="size-3.5" />}
+                  label="누적 운송"
+                  value={`${app.driver.completedCount}건`}
+                  sub={app.driver.completedCount >= 10 ? "우수 드라이버" : "신뢰 형성 중"}
+                />
+              </div>
+
+              {/* Recent ratings */}
+              <div className="mt-3">
+                <p className="mb-1.5 text-[12px] font-semibold text-muted-foreground">
+                  최근 평가
+                </p>
+                {app.driver.recentRatings.length === 0 ? (
+                  <p className="rounded-xl bg-secondary/50 px-3 py-2.5 text-[12px] text-muted-foreground">
+                    아직 평가가 없는 신규 드라이버예요.
+                  </p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {app.driver.recentRatings.map((r) => (
+                      <li
+                        key={r.id}
+                        className="rounded-xl bg-secondary/50 px-3 py-2"
+                      >
+                        <div className="flex items-center gap-1">
+                          <StarRow value={r.stars} size="sm" />
+                          <span className="ml-auto text-[10.5px] text-muted-foreground">
+                            #{r.postId}
+                          </span>
+                        </div>
+                        {r.comment && (
+                          <p className="mt-0.5 text-[12px] leading-relaxed text-foreground/85">
+                            "{r.comment}"
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Approve / status footer */}
+              <div className="mt-4 border-t border-border pt-3">
+                {status === "applied" && (
+                  <button
+                    onClick={handleApprove}
+                    className="w-full rounded-xl bg-primary py-3 text-[14px] font-bold text-primary-foreground shadow-[0_6px_18px_rgba(20,30,60,0.18)]"
+                  >
+                    이 드라이버로 매칭 승인하기
+                  </button>
+                )}
+                {status === "approved" && (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-[11.5px] font-semibold text-mint-foreground">
+                      <Check className="size-3" /> 승인 완료
+                    </span>
+                    <button
+                      onClick={() => setShowRatingModal(true)}
+                      className="ml-auto rounded-lg bg-primary px-3 py-1.5 text-[12.5px] font-semibold text-primary-foreground"
+                    >
+                      운송 완료 처리
+                    </button>
+                  </div>
+                )}
+                {status === "completed" && app.requesterRating && (
+                  <div className="rounded-xl bg-mint/40 px-3 py-2.5">
+                    <p className="text-[12px] font-semibold text-foreground">
+                      내가 남긴 평가
+                    </p>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <StarRow value={app.requesterRating.stars} size="sm" />
+                    </div>
+                    {app.requesterRating.comment && (
+                      <p className="mt-1 text-[12px] text-foreground/80">
+                        "{app.requesterRating.comment}"
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Route */}
+        <section className="mt-3 rounded-2xl border border-border bg-card p-4">
+          <p className="mb-3 text-[13px] font-semibold text-foreground">이동 경로</p>
+          <RouteRow
+            label="출발지"
+            area={post.fromArea}
+            detail={post.fromDetail}
+            unlocked={status === "approved" || status === "completed"}
+          />
+          <div className="ml-3 my-1 h-5 w-px border-l-2 border-dashed border-border" />
+          <RouteRow
+            label="도착지"
+            area={post.toArea}
+            detail={post.toDetail}
+            unlocked={status === "approved" || status === "completed"}
+            isEnd
+          />
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <InfoBlock
+              icon={<Phone className="size-3.5" />}
+              label="수령자 연락처"
+              value={post.receiverPhone}
+              unlocked={status === "approved" || status === "completed"}
+            />
+            <InfoBlock
+              icon={<KeyRound className="size-3.5" />}
+              label="공동현관"
+              value={post.entryCode}
+              unlocked={status === "approved" || status === "completed"}
+            />
+          </div>
+        </section>
+
+        {/* Notes */}
+        <section className="mt-3 rounded-2xl border border-border bg-card p-4">
+          <p className="text-[13px] font-semibold">물품 설명 & 배송 주의사항</p>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-foreground/85">{post.notes}</p>
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {post.cautions.map((c) => (
+              <li
+                key={c}
+                className="inline-flex items-center gap-1 rounded-full bg-acorn/10 px-2.5 py-1 text-[12px] font-medium text-acorn"
+              >
+                <AlertTriangle className="size-3.5" />
+                {c}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Escrow */}
+        <section className="mt-3 rounded-2xl border border-border bg-sky/50 p-4">
+          <div className="flex items-start gap-2.5">
+            <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div>
+              <p className="text-[13.5px] font-semibold text-primary">안심 에스크로 결제</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-sky-foreground/80">
+                배송비는 도토리마켓이 안전하게 보관 후, 수령 확인 시점에 드라이버에게
+                자동 정산됩니다. 분쟁 발생 시 양측 증빙을 받아 중재합니다.
+              </p>
+              <button
+                onClick={() => setShowPolicy(true)}
+                className="mt-2 inline-flex items-center gap-1 rounded-lg bg-card px-2.5 py-1.5 text-[12px] font-medium text-primary shadow-sm hover:bg-card/80"
+              >
+                반송 및 노쇼 정책 보기
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Reset (dev) */}
+        {status !== "none" && (
+          <section className="mt-3 rounded-2xl border border-dashed border-border bg-secondary/30 p-3 text-center">
+            <button
+              onClick={handleReset}
+              className="text-[11.5px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              ↺ 시뮬레이션 초기화
+            </button>
+          </section>
+        )}
+      </main>
+
+      {/* Bottom CTA */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md">
+        <div className="mx-auto max-w-2xl">
+          {status === "completed" ? (
+            <button
+              disabled
+              className="w-full rounded-xl bg-mint py-3.5 text-[15px] font-bold text-mint-foreground"
+            >
+              <Award className="mr-1.5 inline size-4" /> 운송 완료 · 실적에 기록됨
+            </button>
+          ) : status === "approved" ? (
+            <button
+              onClick={() => setShowRatingModal(true)}
+              className="w-full rounded-xl bg-primary py-3.5 text-[15px] font-bold text-primary-foreground shadow-[0_8px_20px_rgba(20,30,60,0.18)]"
+            >
+              <CheckCircle2 className="mr-1.5 inline size-4" />
+              운송 완료 · 평가 남기기
+            </button>
+          ) : status === "applied" ? (
+            <button
+              disabled
+              className="w-full rounded-xl bg-secondary py-3.5 text-[15px] font-bold text-secondary-foreground"
+            >
+              요청자 승인 대기 중…
+            </button>
+          ) : (
+            <button
+              onClick={handleApply}
+              className="w-full rounded-xl bg-primary py-3.5 text-[15px] font-bold text-primary-foreground shadow-[0_8px_20px_rgba(20,30,60,0.18)] transition hover:opacity-95"
+            >
+              배송 대행 신청하기
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Auth modal */}
+      {showAuthModal && (
+        <Modal onClose={() => setShowAuthModal(false)}>
+          <div className="text-center">
+            <div className="mx-auto grid size-12 place-items-center rounded-full bg-primary/10">
+              <Lock className="size-6 text-primary" />
+            </div>
+            <h3 className="mt-3 text-[16px] font-bold">휴대폰 인증이 필요해요</h3>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+              안전한 거래를 위해 도토리마켓은 실명 기반 가입 후<br />
+              배송 신청이 가능해요.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="flex-1 rounded-xl bg-secondary py-3 text-[14px] font-semibold text-secondary-foreground"
+              >
+                나중에
+              </button>
+              <button
+                onClick={() => navigate({ to: "/signup", search: { from: id } })}
+                className="flex-1 rounded-xl bg-primary py-3 text-[14px] font-semibold text-primary-foreground"
+              >
+                가입하고 신청하기
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showPolicy && (
+        <Modal onClose={() => setShowPolicy(false)}>
+          <h3 className="text-[16px] font-bold">반송 및 노쇼 정책</h3>
+          <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-foreground/85">
+            <li>• <b>수령자 부재(노쇼)</b>: 도착 후 15분 대기 후 사진 인증, 배송비 70% 지급 및 반송비 별도 청구.</li>
+            <li>• <b>요청자 귀책 취소</b>: 픽업 완료 후 취소 시 전액 정산 + 반송비 보전.</li>
+            <li>• <b>드라이버 귀책 취소</b>: 픽업 후 1시간 내 사유 입증 시 50% 차감, 그 외 전액 환불.</li>
+            <li>• <b>파손/분실</b>: 물피보상 한도 내 자동 보상, 한도 초과분은 분쟁 중재로 진행.</li>
+          </ul>
+          <button
+            onClick={() => setShowPolicy(false)}
+            className="mt-5 w-full rounded-xl bg-primary py-3 text-[14px] font-semibold text-primary-foreground"
+          >
+            확인했어요
+          </button>
+        </Modal>
+      )}
+
+      {showVehicleModal && (
+        <VehicleApplyModal
+          onClose={() => setShowVehicleModal(false)}
+          onConfirm={confirmApply}
+        />
+      )}
+
+      {showRatingModal && (
+        <RatingModal
+          onClose={() => setShowRatingModal(false)}
+          onSubmit={handleCompleteRating}
+          driverName={app?.driver?.name ?? "드라이버"}
+        />
+      )}
+    </div>
+  );
+}
+
+function VehicleApplyModal({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void;
+  onConfirm: (plate: string) => void;
+}) {
+  const navigate = useNavigate();
+  const member = getMember();
+  const vehicles: Vehicle[] = member?.vehicles ?? [];
+  const [selectedId, setSelectedId] = useState<string | "manual">(
+    vehicles.find((v) => v.verified)?.id ?? (vehicles[0]?.id ?? "manual"),
+  );
+  const [manualPlate, setManualPlate] = useState("");
+
+  const submit = () => {
+    if (selectedId === "manual") {
+      if (!manualPlate.trim()) return;
+      onConfirm(manualPlate.trim());
+    } else {
+      const v = vehicles.find((x) => x.id === selectedId);
+      if (v) onConfirm(v.plate);
+    }
+  };
+
+  const canSubmit =
+    selectedId === "manual" ? manualPlate.trim().length > 0 : !!selectedId;
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="flex items-center gap-2">
+        <span className="grid size-9 place-items-center rounded-full bg-primary/10 text-primary">
+          <Car className="size-4.5" />
+        </span>
+        <div>
+          <h3 className="text-[15.5px] font-bold">배송 차량 선택</h3>
+          <p className="text-[11.5px] text-muted-foreground">
+            요청자에게 어떤 차량으로 배송할지 알려주세요
+          </p>
+        </div>
+      </div>
+
+      {vehicles.length > 0 && (
+        <div className="mt-4">
+          <p className="mb-2 text-[12px] font-semibold text-muted-foreground">
+            내 인증된 차량 가져오기
+          </p>
+          <ul className="space-y-2">
+            {vehicles.map((v) => {
+              const selected = selectedId === v.id;
+              return (
+                <li key={v.id}>
+                  <button
+                    onClick={() => setSelectedId(v.id)}
+                    className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left transition ${
+                      selected
+                        ? "bg-primary/8 ring-2 ring-primary"
+                        : "bg-secondary/60 ring-1 ring-transparent hover:bg-secondary"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Car className="size-4 text-primary" />
+                      <div>
+                        <p className="text-[13.5px] font-bold tracking-tight">
+                          {v.plate}
+                        </p>
+                        <p className="text-[11.5px] text-muted-foreground">
+                          {v.model}
+                        </p>
+                      </div>
+                    </div>
+                    {v.verified && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-mint px-2 py-0.5 text-[10.5px] font-semibold text-mint-foreground">
+                        <Check className="size-3" /> 인증
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-4">
+        <button
+          onClick={() => setSelectedId("manual")}
+          className={`flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-[13px] font-semibold transition ${
+            selectedId === "manual"
+              ? "bg-primary/8 text-primary ring-2 ring-primary"
+              : "bg-secondary/60 text-foreground ring-1 ring-transparent hover:bg-secondary"
+          }`}
+        >
+          <Pencil className="size-3.5" />
+          {vehicles.length > 0 ? "다른 차량 직접 입력" : "차량번호 직접 입력"}
+        </button>
+        {selectedId === "manual" && (
+          <input
+            value={manualPlate}
+            onChange={(e) => setManualPlate(e.target.value)}
+            placeholder="예) 12가 3456"
+            className="mt-2 w-full rounded-xl bg-card px-3.5 py-2.5 text-[14px] tracking-wide outline-none ring-1 ring-border focus:ring-primary"
+            autoFocus
+          />
+        )}
+      </div>
+
+      {vehicles.length === 0 && (
+        <button
+          onClick={() => navigate({ to: "/profile" })}
+          className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
+        >
+          <Plus className="size-3.5" />
+          내 정보에서 차량 인증하기
+        </button>
+      )}
+
+      <div className="mt-5 flex gap-2">
+        <button
+          onClick={onClose}
+          className="flex-1 rounded-xl bg-secondary py-3 text-[14px] font-semibold text-secondary-foreground"
+        >
+          취소
+        </button>
+        <button
+          onClick={submit}
+          disabled={!canSubmit}
+          className="flex-1 rounded-xl bg-primary py-3 text-[14px] font-bold text-primary-foreground disabled:opacity-40"
+        >
+          이 차량으로 신청
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function RatingModal({
+  onClose,
+  onSubmit,
+  driverName,
+}: {
+  onClose: () => void;
+  onSubmit: (stars: number, comment: string) => void;
+  driverName: string;
+}) {
+  const [stars, setStars] = useState(5);
+  const [comment, setComment] = useState("");
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="text-center">
+        <div className="mx-auto grid size-12 place-items-center rounded-full bg-mint text-mint-foreground">
+          <Award className="size-6" />
+        </div>
+        <h3 className="mt-3 text-[16px] font-bold">{driverName} 드라이버 평가</h3>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          평가는 드라이버의 실적 기록에 반영됩니다
+        </p>
+      </div>
+
+      <div className="mt-5 flex items-center justify-center gap-1.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            onClick={() => setStars(n)}
+            className="transition hover:scale-110"
+            aria-label={`${n}점`}
+          >
+            <Star
+              className={`size-8 ${
+                n <= stars ? "fill-acorn text-acorn" : "text-secondary"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+
+      <textarea
+        rows={3}
+        value={comment}
+        onChange={(e) => setComment(e.target.value.slice(0, 200))}
+        placeholder="배송 경험을 한 줄로 남겨주세요 (선택)"
+        className="mt-4 w-full resize-none rounded-xl bg-secondary px-3.5 py-2.5 text-[13px] leading-relaxed outline-none ring-1 ring-transparent focus:bg-card focus:ring-primary"
+      />
+
+      <button
+        onClick={() => onSubmit(stars, comment.trim())}
+        className="mt-4 w-full rounded-xl bg-primary py-3 text-[14px] font-bold text-primary-foreground"
+      >
+        <Send className="mr-1.5 inline size-4" /> 평가 제출 · 운송 완료
+      </button>
+    </Modal>
+  );
+}
+
+function Chip({
+  children,
+  tone,
+}: {
+  children: React.ReactNode;
+  tone: "secondary" | "mint" | "acorn";
+}) {
+  const cls =
+    tone === "mint"
+      ? "bg-mint text-mint-foreground"
+      : tone === "acorn"
+      ? "bg-acorn/15 text-acorn"
+      : "bg-secondary text-secondary-foreground";
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
+      {children}
+    </span>
+  );
+}
+
+function StatBlock({
+  icon,
+  label,
+  value,
+  sub,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="rounded-xl bg-secondary/60 px-3 py-2.5">
+      <p className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+        {icon}
+        {label}
+      </p>
+      <p className="mt-0.5 text-[13.5px] font-bold tracking-tight">{value}</p>
+      {sub && <p className="text-[10.5px] text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+export function StarRow({
+  value,
+  size = "md",
+}: {
+  value: number;
+  size?: "sm" | "md";
+}) {
+  const s = size === "sm" ? "size-3.5" : "size-4";
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={`${s} ${n <= value ? "fill-acorn text-acorn" : "text-secondary"}`}
+        />
+      ))}
+    </span>
+  );
+}
+
+function RouteRow({
+  label,
+  area,
+  detail,
+  unlocked,
+  isEnd,
+}: {
+  label: string;
+  area: string;
+  detail: string;
+  unlocked: boolean;
+  isEnd?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span
+        className={`mt-1.5 grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
+          isEnd ? "bg-acorn text-acorn-foreground" : "bg-primary text-primary-foreground"
+        }`}
+      >
+        <MapPin className="size-3" />
+      </span>
+      <div className="flex-1">
+        <p className="text-[11.5px] font-medium text-muted-foreground">{label}</p>
+        <p className="text-[14px] font-semibold text-foreground">{area}</p>
+        <div
+          className={`mt-1 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12.5px] ${
+            unlocked
+              ? "bg-mint/40 text-foreground"
+              : "bg-secondary text-muted-foreground"
+          }`}
+        >
+          {unlocked ? (
+            <span className="font-medium">{detail}</span>
+          ) : (
+            <>
+              <Lock className="size-3.5" />
+              <span>매칭 승인 후 공개됩니다</span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoBlock({
+  icon,
+  label,
+  value,
+  unlocked,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  unlocked: boolean;
+}) {
+  return (
+    <div className="rounded-xl bg-secondary/50 px-3 py-2.5">
+      <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+        {icon}
+        {label}
+      </p>
+      <p
+        className={`mt-0.5 text-[13px] ${
+          unlocked ? "font-semibold text-foreground" : "text-muted-foreground"
+        }`}
+      >
+        {unlocked ? value : "🔒 매칭 승인 후 공개"}
+      </p>
+    </div>
+  );
+}
+
+function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary"
+          aria-label="닫기"
+        >
+          <X className="size-4" />
+        </button>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+==================== FILE: src/routes/support.tsx ====================
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  LifeBuoy,
+  Send,
+  Flag,
+  Mail,
+  CheckCircle2,
+  ShieldAlert,
+} from "lucide-react";
+
+export const Route = createFileRoute("/support")({
+  component: SupportPage,
+  head: () => ({ meta: [{ title: "고객센터 — 도토리마켓" }] }),
+});
+
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: "배송비는 언제 정산되나요?",
+    a: "수령자가 수령 확인을 누른 시점에 안심 에스크로에 보관된 배송비가 자동 정산됩니다. 분쟁이 발생한 경우 양측 증빙 자료를 기반으로 중재 후 정산이 이루어집니다.",
+  },
+  {
+    q: "물품이 파손되면 어떻게 보상받나요?",
+    a: "가입 시 동의한 물피보상 한도(최대 200만원) 범위 내에서 자동 보상됩니다. 픽업 직후·수령 직전 사진 인증이 의무이며, 미인증 시 보상이 제한될 수 있어요.",
+  },
+  {
+    q: "상세 주소는 왜 매칭 승인 후에야 보이나요?",
+    a: "요청자의 개인정보 보호를 위해 매칭이 승인되기 전까지 출발/도착 상세주소, 수령자 연락처, 공동현관 비밀번호는 마스킹 처리됩니다.",
+  },
+  {
+    q: "드라이버 차량을 인증하려면 어떻게 하나요?",
+    a: "[내 정보 → 차량 인증하기]에서 차량번호와 차종을 입력하면 명의 확인 절차를 거쳐 인증됩니다. 인증된 차량은 신청 시 자동으로 불러올 수 있어요.",
+  },
+  {
+    q: "수령자가 부재중이면 어떻게 되나요?",
+    a: "도착 후 15분 대기 + 현장 사진 인증을 거치면 노쇼 처리됩니다. 배송비 70%가 드라이버에게 지급되며, 반송비는 요청자에게 별도 청구됩니다.",
+  },
+  {
+    q: "신고는 어떤 경우에 할 수 있나요?",
+    a: "허위 게시글, 폭언/협박, 부당한 추가 요구, 금지 물품(주류·담배·의약품 등) 운반 요청 등 정책 위반 시 신고할 수 있어요. 신고 내용은 24시간 내 검토됩니다.",
+  },
+];
+
+function SupportPage() {
+  const [tab, setTab] = useState<"contact" | "report">("contact");
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border/70 bg-background/85 px-3 py-3 backdrop-blur-md">
+        <Link to="/" className="grid size-10 place-items-center rounded-full hover:bg-secondary">
+          <ArrowLeft className="size-5" />
+        </Link>
+        <p className="text-sm font-semibold">고객센터</p>
+        <div className="size-10" />
+      </div>
+
+      <main className="mx-auto max-w-md px-5 pt-5">
+        {/* Hero */}
+        <section className="rounded-2xl bg-primary p-5 text-primary-foreground">
+          <div className="flex items-center gap-2">
+            <LifeBuoy className="size-5" />
+            <p className="text-[12.5px] font-semibold uppercase tracking-wide text-primary-foreground/80">
+              Help Center
+            </p>
+          </div>
+          <h1 className="mt-2 text-[18px] font-bold leading-snug">
+            도토리마켓 사용 중 궁금한 점이<br />있으신가요?
+          </h1>
+          <p className="mt-2 text-[12.5px] text-primary-foreground/80">
+            평일 09:00 ~ 19:00 · 평균 응답 4시간 이내
+          </p>
+        </section>
+
+        {/* FAQ */}
+        <section className="mt-5">
+          <p className="mb-2.5 text-[13.5px] font-bold">자주 묻는 질문</p>
+          <ul className="space-y-2">
+            {FAQ.map((item, i) => (
+              <FaqItem key={i} q={item.q} a={item.a} />
+            ))}
+          </ul>
+        </section>
+
+        {/* Tabs */}
+        <section className="mt-7">
+          <div className="flex gap-1 rounded-full bg-secondary p-1">
+            <TabBtn active={tab === "contact"} onClick={() => setTab("contact")}>
+              <Mail className="mr-1 inline size-3.5" /> 1:1 문의
+            </TabBtn>
+            <TabBtn active={tab === "report"} onClick={() => setTab("report")}>
+              <Flag className="mr-1 inline size-3.5" /> 신고하기
+            </TabBtn>
+          </div>
+
+          <div className="mt-3">
+            {tab === "contact" ? <ContactForm /> : <ReportForm />}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function TabBtn({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 rounded-full py-2 text-[13px] font-semibold transition ${
+        active
+          ? "bg-card text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li className="overflow-hidden rounded-xl border border-border bg-card">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+      >
+        <span className="text-[13.5px] font-semibold">{q}</span>
+        <ChevronDown
+          className={`size-4 shrink-0 text-muted-foreground transition ${
+            open ? "rotate-180 text-primary" : ""
+          }`}
+        />
+      </button>
+      {open && (
+        <div className="border-t border-border bg-secondary/40 px-4 py-3 text-[12.5px] leading-relaxed text-foreground/80">
+          {a}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function ContactForm() {
+  const [category, setCategory] = useState("결제/정산");
+  const [email, setEmail] = useState("");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !title || body.length < 5) return;
+    // simulate send
+    setSent(true);
+    setTimeout(() => {
+      setSent(false);
+      setTitle("");
+      setBody("");
+    }, 2400);
+  };
+
+  return (
+    <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-4">
+      <p className="text-[13px] font-semibold">메일 형태로 문의를 보내드립니다</p>
+      <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+        전화 연결은 운영하지 않아요. 작성하신 내용이 help@dotori.market 으로 전달됩니다.
+      </p>
+
+      <div className="mt-3 space-y-2.5">
+        <FieldLabel>문의 유형</FieldLabel>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full rounded-xl bg-secondary px-3.5 py-2.5 text-[13.5px] outline-none ring-1 ring-transparent focus:ring-primary"
+        >
+          {["결제/정산", "배송 분쟁", "차량 인증", "계정/회원정보", "기타"].map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+
+        <FieldLabel>회신받을 이메일</FieldLabel>
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          className="w-full rounded-xl bg-secondary px-3.5 py-2.5 text-[13.5px] outline-none ring-1 ring-transparent focus:ring-primary"
+          maxLength={120}
+        />
+
+        <FieldLabel>제목</FieldLabel>
+        <input
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="예) 8/15 부산→김해 건 정산 확인 부탁드립니다"
+          className="w-full rounded-xl bg-secondary px-3.5 py-2.5 text-[13.5px] outline-none ring-1 ring-transparent focus:ring-primary"
+          maxLength={80}
+        />
+
+        <FieldLabel hint={`${body.length}/1000`}>내용</FieldLabel>
+        <textarea
+          required
+          rows={5}
+          value={body}
+          onChange={(e) => setBody(e.target.value.slice(0, 1000))}
+          placeholder="문의 내용을 자세히 적어주세요. 게시글 번호, 발생 시각을 알려주시면 빠르게 도와드려요."
+          className="w-full resize-none rounded-xl bg-secondary px-3.5 py-2.5 text-[13.5px] leading-relaxed outline-none ring-1 ring-transparent focus:ring-primary"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={sent}
+        className="mt-4 w-full rounded-xl bg-primary py-3 text-[14px] font-bold text-primary-foreground disabled:bg-mint disabled:text-mint-foreground"
+      >
+        {sent ? (
+          <>
+            <CheckCircle2 className="mr-1.5 inline size-4" /> 전송 완료 · 4시간 내 회신드릴게요
+          </>
+        ) : (
+          <>
+            <Send className="mr-1.5 inline size-4" /> 문의 메일 보내기
+          </>
+        )}
+      </button>
+    </form>
+  );
+}
+
+function ReportForm() {
+  const [target, setTarget] = useState("");
+  const [reason, setReason] = useState("허위 게시글");
+  const [detail, setDetail] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!target || detail.length < 5) return;
+    setSent(true);
+    setTimeout(() => {
+      setSent(false);
+      setTarget("");
+      setDetail("");
+    }, 2400);
+  };
+
+  return (
+    <form onSubmit={submit} className="rounded-2xl border border-acorn/40 bg-acorn/[0.04] p-4">
+      <div className="flex items-start gap-2">
+        <ShieldAlert className="mt-0.5 size-5 shrink-0 text-acorn" />
+        <div>
+          <p className="text-[13px] font-bold text-acorn">신고 접수</p>
+          <p className="mt-0.5 text-[11.5px] text-foreground/75">
+            악의적 신고는 이용 제한될 수 있어요. 접수된 신고는 24시간 내 검토됩니다.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2.5">
+        <FieldLabel>신고 대상 (사용자 ID 또는 게시글 번호)</FieldLabel>
+        <input
+          required
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+          placeholder="예) 게시글 #3 또는 driver_2284"
+          className="w-full rounded-xl bg-card px-3.5 py-2.5 text-[13.5px] outline-none ring-1 ring-border focus:ring-acorn"
+          maxLength={80}
+        />
+
+        <FieldLabel>신고 사유</FieldLabel>
+        <select
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="w-full rounded-xl bg-card px-3.5 py-2.5 text-[13.5px] outline-none ring-1 ring-border focus:ring-acorn"
+        >
+          {[
+            "허위 게시글",
+            "폭언/협박",
+            "부당한 추가 요구",
+            "금지 물품 운반 요청",
+            "사기/금전 사기",
+            "기타",
+          ].map((r) => (
+            <option key={r}>{r}</option>
+          ))}
+        </select>
+
+        <FieldLabel hint={`${detail.length}/1000`}>상세 내용 및 증빙</FieldLabel>
+        <textarea
+          required
+          rows={5}
+          value={detail}
+          onChange={(e) => setDetail(e.target.value.slice(0, 1000))}
+          placeholder="발생 시각, 대화 내용, 캡처 가능한 증빙을 함께 적어주세요."
+          className="w-full resize-none rounded-xl bg-card px-3.5 py-2.5 text-[13.5px] leading-relaxed outline-none ring-1 ring-border focus:ring-acorn"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={sent}
+        className="mt-4 w-full rounded-xl bg-acorn py-3 text-[14px] font-bold text-acorn-foreground disabled:opacity-70"
+      >
+        {sent ? (
+          <>
+            <CheckCircle2 className="mr-1.5 inline size-4" /> 신고 접수 완료
+          </>
+        ) : (
+          <>
+            <Flag className="mr-1.5 inline size-4" /> 신고 접수하기
+          </>
+        )}
+      </button>
+    </form>
+  );
+}
+
+function FieldLabel({
+  children,
+  hint,
+}: {
+  children: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <span className="text-[12px] font-semibold text-muted-foreground">
+        {children}
+      </span>
+      {hint && <span className="text-[10.5px] text-muted-foreground/70">{hint}</span>}
+    </div>
+  );
+}

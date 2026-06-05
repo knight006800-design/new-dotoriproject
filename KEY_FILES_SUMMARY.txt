@@ -1,0 +1,272 @@
+================================================================================
+DOTORI-ROUTE-RELAY PROJECT - KEY FILES SUMMARY
+================================================================================
+
+PROJECT OVERVIEW:
+This is a TanStack Start (React) + TypeScript web application for a delivery/routing
+relay platform called "Dotori". It uses:
+- React 19.2 + TypeScript 5.8
+- TanStack Router for routing
+- TanStack React Query for data fetching
+- Tailwind CSS + Shadcn/UI for styling
+- Bun as package manager
+- Vite as build tool
+
+All files are now downloaded to: /tmp/cc-agent/67551018/project/repo-download/
+
+================================================================================
+CRITICAL FILES CONTENT
+================================================================================
+
+1. PACKAGE.JSON (Dependencies)
+Location: /tmp/cc-agent/67551018/project/repo-download/package.json
+
+Key Dependencies:
+- React 19.2.0
+- TypeScript 5.8.3
+- TanStack Start 1.167.50
+- TanStack Router 1.168.25
+- TanStack React Query 5.83.0
+- Tailwind CSS 4.2.1
+- Shadcn/UI (46 UI components)
+- Zod for validation
+- React Hook Form 7.71.2
+- Recharts for charts
+- Sonner for toast notifications
+- Vaul for drawer components
+
+Build Tools:
+- Vite 7.3.1
+- Nitro (server framework)
+- ESLint + Prettier
+
+2. TSCONFIG.JSON
+Location: /tmp/cc-agent/67551018/project/repo-download/tsconfig.json
+- Target: ES2022
+- JSX: react-jsx
+- Module resolution: Bundler
+- Strict mode enabled
+- Path alias configured: @/* -> ./src/*
+
+3. VITE CONFIG
+Location: /tmp/cc-agent/67551018/project/repo-download/vite.config.ts
+Uses @lovable.dev/vite-tanstack-config which includes:
+- TanStack Start plugin
+- React plugin
+- Tailwind CSS
+- TypeScript paths
+- Nitro (server)
+
+================================================================================
+SOURCE STRUCTURE
+================================================================================
+
+/src
+  /components/ui/          - 46 Shadcn UI components
+  /hooks/                  - Custom React hooks
+    - use-mobile.tsx
+  /lib/                    - Business logic
+    - utils.ts             - Utility functions (cn for classnames)
+    - dotori-state.ts      - Client state management (localStorage)
+    - posts.ts             - Mock post data
+    - error-capture.ts     - Error handling
+    - error-page.ts        - Error page component
+    - lovable-error-reporting.ts
+    - config.server.ts     - Server config
+    /api/
+      - example.functions.ts
+  /routes/                 - File-based routing
+    - __root.tsx           - Root layout
+    - index.tsx            - Home page
+    - profile.tsx          - User profile
+    - signup.tsx           - Sign up page
+    - notifications.tsx    - Notifications page
+    - post.$id.tsx         - Dynamic post detail page
+    - support.tsx          - Support page
+  - router.tsx             - Router setup
+  - server.ts              - SSR server entry
+  - start.ts               - Start server entry
+  - styles.css             - Global styles
+  - routeTree.gen.ts       - Auto-generated route tree
+
+================================================================================
+KEY APPLICATION FILES
+================================================================================
+
+A. dotori-state.ts - Client State Management
+Location: /tmp/cc-agent/67551018/project/repo-download/src/lib/dotori-state.ts
+
+Manages:
+- Member profile (name, phone, password, vehicles, stats)
+- Vehicle inventory with verification status
+- Driver ratings and statistics
+- Application status for delivery posts
+- Notifications system
+
+Types:
+- Member, Vehicle, Rating, DriverStats
+- AppStatus: "applied" | "approved" | "completed"
+- AppState with driver snapshot
+- Notification with read status
+
+State stored in localStorage under keys:
+- dotori.member
+- dotori.applications
+- dotori.notifications
+- dotori.driverStats
+
+B. posts.ts - Mock Post Data
+Location: /tmp/cc-agent/67551018/project/repo-download/src/lib/posts.ts
+
+Contains sample delivery post objects with:
+- Delivery details (from/to areas, pickup window, deadline)
+- Package info (product, weight, special handling)
+- Fee information
+- Contact details (receiver phone, entry codes)
+- Cautions and special instructions
+- AI estimated delivery time
+
+C. Router Configuration
+Location: /tmp/cc-agent/67551018/project/repo-download/src/router.tsx
+
+Creates TanStack Router with:
+- Query client for React Query
+- Scroll restoration enabled
+- 0ms default preload stale time
+
+D. Root Layout
+Location: /tmp/cc-agent/67551018/project/repo-download/src/routes/__root.tsx
+
+Provides:
+- Global error boundary
+- CSS injection
+- Error reporting to Lovable
+- 404 page
+- HTML structure (Head, Scripts)
+
+================================================================================
+UI COMPONENTS (46 Total - Shadcn/UI)
+================================================================================
+
+Located in: /tmp/cc-agent/67551018/project/repo-download/src/components/ui/
+
+Form Components:
+- button, input, label, checkbox, radio-group, select
+- slider, switch, textarea, input-otp, toggle, toggle-group
+- form (with react-hook-form integration)
+
+Layout Components:
+- card, accordion, tabs, collapsible
+- breadcrumb, pagination, separator
+- scroll-area, resizable, sidebar
+
+Dialog/Overlay Components:
+- dialog, alert-dialog, popover, hover-card, tooltip
+- drawer, dropdown-menu, context-menu, sheet
+- navigation-menu, command, menubar
+
+Data Display:
+- table, calendar, carousel, badge, avatar
+- alert, progress, skeleton, chart, sonner
+
+Utility:
+- aspect-ratio
+
+All components are based on Radix UI primitives with Tailwind CSS styling.
+
+================================================================================
+ROUTES (File-Based Routing with TanStack Router)
+================================================================================
+
+Location: /tmp/cc-agent/67551018/project/repo-download/src/routes/
+
+/ (index.tsx)
+  - Home page
+  - Lists available delivery posts
+  - Apply button for drivers
+
+/profile.tsx
+  - User profile page
+  - Vehicle management
+  - Driver statistics and ratings
+
+/signup.tsx
+  - Sign up page
+  - User registration
+
+/notifications.tsx
+  - Notifications page
+  - Lists all notifications
+  - Mark as read functionality
+
+/post.$id.tsx
+  - Dynamic post detail page
+  - Shows post details by ID
+  - Application management
+
+/support.tsx
+  - Support/help page
+
+================================================================================
+CONFIGURATION FILES
+================================================================================
+
+Location: /tmp/cc-agent/67551018/project/repo-download/
+
+.prettierrc
+  - Configured for code formatting
+
+.gitignore
+  - Standard ignore patterns
+
+components.json
+  - Shadcn/UI configuration
+
+eslint.config.js
+  - ESLint rules configuration
+
+bunfig.toml
+  - Bun package manager config
+
+================================================================================
+HOW TO USE THE DOWNLOADED FILES
+================================================================================
+
+Directory: /tmp/cc-agent/67551018/project/repo-download/
+
+To rebuild the project:
+
+1. Copy all files to your local machine
+2. Install dependencies: bun install (or npm install)
+3. Run development server: bun run dev
+4. Build for production: bun run build
+
+All 78 files are complete and ready to use.
+
+================================================================================
+PROJECT SUMMARY
+
+Total Files Downloaded: 78
+- Config files: 10
+- Source files: 68 (routes, components, hooks, lib)
+- UI Components: 46 Shadcn components
+
+Project Type: TanStack Start (React SSR + Vite)
+Language: TypeScript
+Styling: Tailwind CSS + Shadcn/UI
+State: LocalStorage + React Context + React Query
+Framework: React 19 with TanStack Router
+
+The project is a delivery/routing relay platform frontend with:
+- User authentication and profiles
+- Vehicle management
+- Delivery post listing and application
+- Notifications system
+- Rating/review system
+- Mock data storage in localStorage
+
+================================================================================
+
+All files are available in: /tmp/cc-agent/67551018/project/repo-download/
+
+You now have a complete, working replica of the dotori-route-relay project.
